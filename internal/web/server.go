@@ -325,6 +325,7 @@ func (s *Server) InitM365CloudClient() {
 	}
 	InitM365CloudClient(clientID, acc.TID, acc.RefreshToken)
 	log.Printf("[m365-cloud] client initialized for account %s", acc.Email)
+	go syncUpstreamTones()
 }
 
 // keepPoolWarm re-warms the accounts most likely to serve the next requests,
@@ -1649,6 +1650,9 @@ func modelTone(model string) string {
 	case "critique":
 		return "Critique"
 	default:
+		if tone, ok := dynamicToneForModel(model); ok {
+			return tone
+		}
 		return "magic"
 	}
 }
