@@ -193,7 +193,17 @@ func TestReasoningEffortRouting(t *testing.T) {
 		{"claude-sonnet", "high", "Claude_Sonnet_Reasoning"},
 		{"gpt-5.5", "low", "Gpt_5_5_Chat"},
 		{"gpt-5.5", "medium", "Gpt_5_5_Reasoning"},
+		{"gpt-5.6", "low", "Gpt_5_6_Chat"},
+		{"gpt-5.6", "high", "Gpt_5_6_Reasoning"},
 		{"gpt-5.6-reasoning", "none", "Gpt_5_6_Reasoning"},
+		{"gpt-6-sol", "none", "Gpt_6_Sol_Reasoning"},
+		{"gpt-6-sol", "high", "Gpt_6_Sol_Reasoning"},
+		{"gpt-6.1-sol", "none", "Gpt_61_Sol_Reasoning"},
+		{"gpt-6.1-sol", "high", "Gpt_61_Sol_Reasoning"},
+		{"gpt-6-reasoning", "none", "Gpt_6_Reasoning"},
+		{"claude-opus", "high", "Claude_Opus"},
+		{"claude-sonnet-5", "high", "Claude_Sonnet_5"},
+		{"claude-sonnet-5.5", "high", "Claude_Sonnet"},
 	}
 	for _, tc := range cases {
 		got, err := reasoningTone(tc.model, tc.effort)
@@ -203,6 +213,12 @@ func TestReasoningEffortRouting(t *testing.T) {
 	}
 	if _, err := reasoningTone("gpt-5.6-reasoning", "extreme"); err == nil {
 		t.Fatal("invalid effort accepted")
+	}
+	if sc, lic := effectiveScenarioAndLicense("gpt-6-reasoning", "Gpt_6_Reasoning", "OfficeWebIncludedCopilot", "Starter"); sc != "OfficeWebPaidCopilot" || lic != "Premium" {
+		t.Fatalf("paid scenario upgrade failed: %s / %s", sc, lic)
+	}
+	if sc, lic := effectiveScenarioAndLicense("gpt-6.1-sol", "Gpt_61_Sol_Reasoning", "OfficeWebIncludedCopilot", "Starter"); sc != "OfficeWebIncludedCopilot" || lic != "Starter" {
+		t.Fatalf("included scenario must stay unchanged for gpt-6.1-sol: %s / %s", sc, lic)
 	}
 }
 

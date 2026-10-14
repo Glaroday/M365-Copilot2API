@@ -341,8 +341,12 @@ The gateway ships with a default model mapping (you can add/remove entries and a
 
 | Model | Default reasoning level | Notes |
 |------|-------------|------|
-| `gpt-5.6-reasoning` | `medium` | Reasoning model |
+| `gpt-6.1-sol` / `gpt-6-sol` | `medium` | GPT-6.1 Sol / GPT-6.0 Sol reasoning models (available on all accounts under Included scenario) |
+| `gpt-6-reasoning` / `gpt-6-astra` | `medium` | GPT-6 reasoning (requires Paid scenario seat) / GPT-6 Astra |
+| `gpt-5.6-reasoning` / `gpt-5.6` | `medium` | GPT-5.6 reasoning and fast models |
 | `gpt-5.5` / `gpt-5.4` / `gpt-5.3` / `gpt-5.2` | `medium` | Fast models (`reasoning_effort` can switch levels) |
+| `claude-sonnet` / `claude-sonnet-5` / `claude-sonnet-5.5` | `medium` | Claude Sonnet 4.6 (Included) / Sonnet 5 & 5.5 (Paid) |
+| `claude-opus` / `claude-opus-4.8` / `claude-opus-5.5` | `medium` | Claude Opus 4.8 (Included) / Opus 5.5 (Paid) |
 | `flux-3` / `flux-4` | - | Image-generation models (go through the real `/v1/images` image pipeline) |
 
 - Model mapping translates public model names into the upstream tone; the console lets you add/remove mappings and adjust the default reasoning level.

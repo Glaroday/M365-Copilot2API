@@ -68,11 +68,23 @@ var gatewayModels = []modelSpec{
 	{ID: "gpt-5.4-reasoning", Owner: "microsoft-365", Tools: true},
 	{ID: "gpt-5.5", Owner: "microsoft-365", Tools: true},
 	{ID: "gpt-5.5-reasoning", Owner: "microsoft-365", Tools: true},
+	{ID: "gpt-5.6", Owner: "microsoft-365", Tools: true},
 	{ID: "gpt-5.6-reasoning", Owner: "microsoft-365", Tools: true},
+	{ID: "gpt-6-sol", Owner: "microsoft-365", DisplayName: "GPT-6 Sol", Tools: true},
+	{ID: "gpt-6.1-sol", Owner: "microsoft-365", DisplayName: "GPT-6.1 Sol", Tools: true},
+	{ID: "gpt-6-reasoning", Owner: "microsoft-365", DisplayName: "GPT-6 Reasoning", Tools: true},
+	{ID: "gpt-6-astra", Owner: "microsoft-365", DisplayName: "GPT-6 Astra", Tools: true},
 	{ID: "flux-3", Owner: "microsoft-365", DisplayName: "Flux 3", Image: true},
 	{ID: "flux-4", Owner: "microsoft-365", DisplayName: "Flux 4", Image: true},
 	{ID: "claude-sonnet", Owner: "anthropic-via-microsoft-365", Tools: true},
 	{ID: "claude-sonnet-reasoning", Owner: "anthropic-via-microsoft-365", Tools: true},
+	{ID: "claude-sonnet-5", Owner: "anthropic-via-microsoft-365", DisplayName: "Claude Sonnet 5", Tools: true},
+	{ID: "claude-sonnet-5.5", Owner: "anthropic-via-microsoft-365", DisplayName: "Claude Sonnet 5.5", Tools: true},
+	{ID: "claude-opus", Owner: "anthropic-via-microsoft-365", DisplayName: "Claude Opus", Tools: true},
+	{ID: "claude-opus-4.8", Owner: "anthropic-via-microsoft-365", DisplayName: "Claude Opus 4.8", Tools: true},
+	{ID: "claude-opus-5.5", Owner: "anthropic-via-microsoft-365", DisplayName: "Claude Opus 5.5", Tools: true},
+	{ID: "grok-4.5", Owner: "microsoft-365", DisplayName: "Grok 4.5", Tools: true},
+	{ID: "grok-reasoning", Owner: "microsoft-365", DisplayName: "Grok Reasoning", Tools: true},
 }
 
 // isImageModel reports whether a public model id routes to the image
@@ -101,7 +113,12 @@ func isKnownPublicModel(model string) bool {
 		}
 	}
 	switch id {
-	case "claude", "gpt-5.4-quick", "gpt-5.3-think-deeper":
+	case "claude", "gpt-5.4-quick", "gpt-5.3-think-deeper",
+		"gpt-5.5-quick", "gpt-5.5-think-deeper",
+		"gpt-5.6-quick", "gpt-5.6-think-deeper",
+		"gpt-6-think-deeper", "gpt-6.0-sol", "gpt6sol", "gpt-6-sol-reasoning", "gpt-6.1-sol-reasoning",
+		"claude-sonnet-4.6", "claude-sonnet-think-deeper", "claude-opus-4.5", "claude-opus-5",
+		"grok-auto", "muse-spark", "critique", "claude-fable":
 		return true
 	}
 	return false
@@ -121,17 +138,28 @@ func validUpstreamTone(tone string) bool {
 			return true
 		}
 	}
+	for _, known := range knownUpstreamTones() {
+		if tone == known {
+			return true
+		}
+	}
 	return false
 }
 
 func knownUpstreamTones() []string {
 	return []string{
-		"Magic", "Gpt_5_2_Auto", "Gpt_5_2_Chat", "Gpt_5_2_Reasoning",
+		"Magic", "Chat", "Reasoning",
+		"Gpt_5_2_Auto", "Gpt_5_2_Chat", "Gpt_5_2_Reasoning",
 		"Gpt_5_3_Chat", "Gpt_5_3_Reasoning",
 		"Gpt_5_4_Chat", "Gpt_5_4_Reasoning",
 		"Gpt_5_5_Chat", "Gpt_5_5_Reasoning",
-		"Gpt_5_6_Reasoning",
-		"Claude_Sonnet", "Claude_Sonnet_Reasoning",
+		"Gpt_5_6_Chat", "Gpt_5_6_Reasoning", "GPT_5_6_Chat", "GPT_5_6_Reasoning",
+		"Gpt_6_Reasoning", "Gpt_6_Astra", "GPT_6_Astra",
+		"Gpt_6_Sol_Chat", "Gpt_6_Sol_Reasoning", "GPT_6_Sol_Chat", "GPT_6_Sol_Reasoning",
+		"Gpt_61_Sol_Reasoning",
+		"Claude_Sonnet", "Claude_Sonnet_Reasoning", "Claude_Sonnet_5", "Claude_Opus", "Claude_Fable",
+		"Grok_4_5", "Grok_Auto", "Grok_Reasoning",
+		"Muse_Spark", "Critique",
 	}
 }
 
@@ -189,7 +217,7 @@ func fetchUpstreamTones() []string {
 	}
 	bundle, _ := io.ReadAll(io.LimitReader(resp2.Body, 4<<20))
 	resp2.Body.Close()
-	toneRe := regexp.MustCompile(`(?:Gpt_[0-9]_[0-9]_[A-Za-z_]+|Claude_[A-Za-z0-9_]+|Magic)`)
+	toneRe := regexp.MustCompile(`(?:(?:Gpt|GPT)_[0-9]+(?:_[0-9]+)?_[A-Za-z0-9_]+|Claude_[A-Za-z0-9_]+|Grok_[A-Za-z0-9_]+|Muse_Spark|Critique|Magic)`)
 	matches := toneRe.FindAllString(string(bundle), -1)
 	seen := map[string]bool{}
 	for _, t := range matches {
@@ -282,29 +310,63 @@ func reasoningTone(model, effort string) (string, error) {
 		return tone, nil
 	}
 	base := modelTone(model)
-	// Explicit reasoning aliases are never silently downgraded by a generic client default.
-	if strings.Contains(strings.ToLower(model), "reasoning") {
+	id := strings.ToLower(strings.TrimSpace(model))
+	// Explicit reasoning or pinned selector aliases are never silently downgraded
+	// or cross-routed by a generic client default reasoning_effort.
+	if strings.Contains(id, "reasoning") || strings.Contains(id, "think-deeper") ||
+		strings.Contains(id, "sol") || strings.Contains(id, "astra") ||
+		strings.Contains(id, "opus") || strings.HasPrefix(id, "claude-sonnet-5") ||
+		strings.HasPrefix(id, "grok") || id == "muse-spark" || id == "critique" || id == "claude-fable" {
 		return base, nil
 	}
 	if e == "" || e == "none" || e == "minimal" || e == "low" {
 		return base, nil
 	}
-	switch strings.ToLower(strings.TrimSpace(model)) {
-	case "claude", "claude-sonnet":
+	switch id {
+	case "claude", "claude-sonnet", "claude-sonnet-4.6":
 		return "Claude_Sonnet_Reasoning", nil
-	case "gpt-5.2":
+	case "gpt-5.2", "gpt-5.2-quick":
 		return "Gpt_5_2_Reasoning", nil
-	case "gpt-5.3":
+	case "gpt-5.3", "gpt-5.3-quick":
 		return "Gpt_5_3_Reasoning", nil
-	case "gpt-5.4":
+	case "gpt-5.4", "gpt-5.4-quick":
 		return "Gpt_5_4_Reasoning", nil
-	case "gpt-5.5":
+	case "gpt-5.5", "gpt-5.5-quick":
 		return "Gpt_5_5_Reasoning", nil
-	case "gpt-5.6":
+	case "gpt-5.6", "gpt-5.6-quick":
 		return "Gpt_5_6_Reasoning", nil
+	case "gpt-6":
+		return "Gpt_6_Reasoning", nil
 	default:
 		return "Gpt_5_5_Reasoning", nil
 	}
+}
+
+// effectiveScenarioAndLicense upgrades the WS scenario/licenseType to
+// OfficeWebPaidCopilot + Premium when the requested model or tone is gated on
+// the paid scenario (e.g. Gpt_6_Reasoning, Claude_Sonnet_5, claude-sonnet-5.5,
+// claude-opus-5.5) and the runtime setting is still at the default included
+// scenario. Ungated models (gpt-6-sol, gpt-6.1-sol, claude-opus-4.8, etc.) keep
+// the configured scenario so they work on non-premium accounts and avoid
+// spending priority-access quotas unnecessarily.
+func effectiveScenarioAndLicense(model, tone, cfgScenario, cfgLicense string) (string, string) {
+	if cfgScenario != "" && cfgScenario != "OfficeWebIncludedCopilot" {
+		return cfgScenario, cfgLicense
+	}
+	id := strings.ToLower(strings.TrimSpace(model))
+	switch id {
+	case "gpt-6", "gpt-6-reasoning", "gpt-6-think-deeper",
+		"claude-sonnet-5", "claude-sonnet-5.5",
+		"claude-opus-5", "claude-opus-5.5":
+		return "OfficeWebPaidCopilot", "Premium"
+	case "claude-opus-4.5", "claude-opus-4.8", "gpt-6-sol", "gpt-6.1-sol":
+		return cfgScenario, cfgLicense
+	}
+	switch tone {
+	case "Gpt_6_Reasoning", "Claude_Sonnet_5":
+		return "OfficeWebPaidCopilot", "Premium"
+	}
+	return cfgScenario, cfgLicense
 }
 func modelCatalog() []map[string]any {
 	l := configuredModelLimits()

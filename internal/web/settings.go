@@ -31,7 +31,18 @@ var configurableCodexModels = []string{
 	"gpt-5.4",
 	"gpt-5.4-mini",
 	"gpt-5.5",
+	"gpt-5.6",
 	"gpt-5.6-reasoning",
+	"gpt-6-sol",
+	"gpt-6.1-sol",
+	"gpt-6-reasoning",
+	"gpt-6-astra",
+	"claude-sonnet",
+	"claude-sonnet-5",
+	"claude-sonnet-5.5",
+	"claude-opus",
+	"claude-opus-4.8",
+	"claude-opus-5.5",
 	"flux-3",
 	"flux-4",
 	"codex-auto-review",
@@ -213,9 +224,9 @@ func validateSettings(v runtimeSettings) error {
 	if !validLicenses[v.LicenseType] {
 		return fmt.Errorf("licenseType 必须为 Starter、Premium、Free、BCAIS、BCSWW、BCWAF 或 BCWBF")
 	}
-	validScenarios := map[string]bool{"OfficeWebIncludedCopilot": true, "Bizchat": true, "CopilotConsumer": true, "Chathub": true}
+	validScenarios := map[string]bool{"OfficeWebIncludedCopilot": true, "OfficeWebPaidCopilot": true, "Bizchat": true, "CopilotConsumer": true, "Chathub": true}
 	if !validScenarios[v.Scenario] {
-		return fmt.Errorf("scenario 必须为 OfficeWebIncludedCopilot、Bizchat、CopilotConsumer 或 Chathub")
+		return fmt.Errorf("scenario 必须为 OfficeWebIncludedCopilot、OfficeWebPaidCopilot、Bizchat、CopilotConsumer 或 Chathub")
 	}
 	if v.AccountConcurrencyLimit < 1 || v.AccountConcurrencyLimit > 64 {
 		return fmt.Errorf("账号并发上限必须为 1-64")

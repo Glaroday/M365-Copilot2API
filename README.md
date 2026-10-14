@@ -343,8 +343,12 @@ curl http://127.0.0.1:4141/v1/messages \
 
 | 模型 | 默认推理级别 | 说明 |
 |------|-------------|------|
-| `gpt-5.6-reasoning` | `medium` | 推理模型 |
+| `gpt-6.1-sol` / `gpt-6-sol` | `medium` | GPT-6.1 Sol / GPT-6.0 Sol 推理模型（Included 场景全账号可用） |
+| `gpt-6-reasoning` / `gpt-6-astra` | `medium` | GPT-6 推理（需 Paid 场景席位）/ GPT-6 Astra |
+| `gpt-5.6-reasoning` / `gpt-5.6` | `medium` | GPT-5.6 推理与快速模型 |
 | `gpt-5.5` / `gpt-5.4` / `gpt-5.3` / `gpt-5.2` | `medium` | 快速模型（`reasoning_effort` 可切档） |
+| `claude-sonnet` / `claude-sonnet-5` / `claude-sonnet-5.5` | `medium` | Claude Sonnet 4.6（Included）/ Sonnet 5 & 5.5（Paid） |
+| `claude-opus` / `claude-opus-4.8` / `claude-opus-5.5` | `medium` | Claude Opus 4.8（Included）/ Opus 5.5（Paid） |
 | `flux-3` / `flux-4` | - | 生图模型（走 `/v1/images` 真实图像管线） |
 
 - 模型映射把公开模型名翻译成上游 tone；控制台可增删映射、调整默认推理级别。
